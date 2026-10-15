@@ -1,0 +1,13 @@
+Treatment,N,Algorithm,Comparisons,Swaps,Time_ms_median,Time_ms_min,Time_ms_max
+25%,12500,TimSort (Python),154085,N/A,65.404,60.767,67.919
+25%,12500,"Quicksort (median-of-three, 3-way)",272263,136489,68.819,66.847,70.785
+25%,12500,Introsort (3-way + heapsort fallback),272263,136489,67.211,66.525,80.266
+50%,25000,TimSort (Python),333008,N/A,147.264,138.44,356.875
+50%,25000,"Quicksort (median-of-three, 3-way)",592522,291860,151.802,143.685,185.603
+50%,25000,Introsort (3-way + heapsort fallback),592522,291860,147.755,144.072,157.95
+75%,37500,TimSort (Python),522033,N/A,221.581,220.397,291.883
+75%,37500,"Quicksort (median-of-three, 3-way)",883750,426149,232.674,221.58,241.463
+75%,37500,Introsort (3-way + heapsort fallback),883750,426149,229.3,223.986,239.02
+100%,50000,TimSort (Python),715725,N/A,314.733,298.05,378.173
+100%,50000,"Quicksort (median-of-three, 3-way)",1240052,597804,314.489,310.744,331.272
+100%,50000,Introsort (3-way + heapsort fallback),1240052,597804,312.998,311.434,333.27
