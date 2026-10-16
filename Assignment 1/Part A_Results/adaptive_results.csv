@@ -1,0 +1,13 @@
+Input Order,Algorithm,Comparisons,Swaps,Median Time (ms)
+Original order,TimSort (Python),154085,N/A,88.216
+Original order,"Quicksort (median-of-three, 3-way)",272263,136489,67.751
+Original order,Introsort (3-way + heapsort fallback),272263,136489,74.259
+Already sorted,TimSort (Python),12499,N/A,20.184
+Already sorted,"Quicksort (median-of-three, 3-way)",1497677,742116,333.072
+Already sorted,Introsort (3-way + heapsort fallback),834561,420620,477.342
+Reverse sorted,TimSort (Python),12499,N/A,34.264
+Reverse sorted,"Quicksort (median-of-three, 3-way)",1082708,531660,685.039
+Reverse sorted,Introsort (3-way + heapsort fallback),764481,381238,547.795
+Shuffled,TimSort (Python),153931,N/A,94.542
+Shuffled,"Quicksort (median-of-three, 3-way)",269011,132865,69.91
+Shuffled,Introsort (3-way + heapsort fallback),269011,132865,68.377
