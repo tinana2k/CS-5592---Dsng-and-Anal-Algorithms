@@ -82,7 +82,7 @@ pdf.cell(0, 5, "Tina Nguyen (Lead: Graph Labeling)   &   Haoran (Lead: NLP Pipel
 pdf.set_font("Helvetica", "I", 9)
 pdf.set_text_color(80, 80, 80)
 pdf.cell(0, 4.5, "Division of Computing, Analytics and Mathematics, School of Science and Engineering", 0, 1, "C")
-pdf.cell(0, 4.5, "University of Missouri - Kansas City, MO 64110, USA | tinanguyen@umkc.edu, haoran@umkc.edu", 0, 1, "C")
+pdf.cell(0, 4.5, "University of Missouri - Kansas City, MO 64110, USA | tinanguyen@umkc.edu, hzwkg@umsystem.edu", 0, 1, "C")
 pdf.cell(0, 4.5, "Course: COMP-SCI 5592: Design and Analysis of Algorithms (Fall 2026)", 0, 1, "C")
 pdf.ln(4)
 
@@ -102,7 +102,8 @@ pdf.write(4.5,
     "strength es(G) of Generalized Petersen Graphs GP(n, p) and related symmetrical topologies (Ship Wheel SW(8, 2) and Crab graphs). "
     "We establish the adjacency list with 2-hop neighborhood precomputation as the optimal data structure. We formulate an exact "
     "backtracking algorithm with coupled spoke traversal and a scalable greedy heuristic. Our exact algorithm provably achieves "
-    "the theoretical lower bound es(GP(n, p)) = ceil((3n+1)/2) with zero waste (including es(GP(12, 5)) = 19). The scalable heuristic "
+    "the theoretical lower bound es(GP(n, p)) = ceil((3n+1)/2) with zero waste for all n >= 4 (including es(GP(12, 5)) = 19). "
+    "The notable exception GP(3, 1) has es = 6 > LB = 5 due to tight symmetry constraints. The scalable heuristic "
     "evaluates up to n = 1000 (|V|=2000, |E|=3000) in 4.75 seconds. In Problem 2, we implement a comparative 5-stage NLP pipeline on the "
     "complete works of William Shakespeare (5.46 MB, 124,456 lines). Our custom algorithmic pipeline (regex FSM tokenization, custom hash "
     "table stopword filtering, pure Python Porter stemmer with dynamic programming memoization, and custom Bag-of-Words) achieves a 2.6x "
@@ -157,8 +158,9 @@ if os.path.exists(gp12_path):
 pdf.add_page()
 pdf.sub_title("2.1 Empirical Results and Lower Bound Optimality")
 pdf.body_paragraph(
-    "Table 1 summarizes experimental outcomes for GP(n, p). For all solvable instances, exact backtracking hits the theoretical lower bound "
-    "ceil((3n+1)/2) with 100% mathematical optimality. Crucially, for GP(12, 5) (Slide 14), our exact algorithm proves that es(GP(12, 5)) = 19 "
+    "Table 1 summarizes experimental outcomes for GP(n, p). For all solvable instances with n >= 4, exact backtracking hits the theoretical lower bound "
+    "ceil((3n+1)/2) with 100% mathematical optimality. GP(3, 1) is the notable exception with es = 6 > LB = 5. "
+    "Crucially, for GP(12, 5) (Slide 14), our exact algorithm proves that es(GP(12, 5)) = 19 "
     "in 0.3254s, generating edge weights 2 to 37. Slide 15's Ship Wheel SW(8, 2) was also solved, achieving optimal k = 17."
 )
 

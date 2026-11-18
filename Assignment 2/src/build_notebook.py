@@ -17,7 +17,7 @@ cells.append(nbf.v4.new_markdown_cell("""# Assignment 2: Vertex k-Labeling of Gr
 **Term:** Fall 2026  
 **Authors:**
 - **Tina Nguyen** (tinanguyen@umkc.edu) - *Lead: Graph Labeling & Algorithms*
-- **Haoran** (haoran@umkc.edu) - *Lead: NLP Pipeline & Performance Analysis*
+- **Haoran** (hzwkg@umsystem.edu) - *Lead: NLP Pipeline & Performance Analysis*
 
 **Division of Computing, Analytics and Mathematics**  
 **School of Science and Engineering, University of Missouri - Kansas City (UMKC)**  
@@ -185,7 +185,11 @@ if os.path.exists(sw_img_path):
 # Cell: Empirical Benchmarks & Table
 cells.append(nbf.v4.new_markdown_cell("""### 1.6 Empirical Results & Mathematical Bound Comparison
 We benchmarked $GP(n, p)$ across orders from $n = 3$ to $n = 1000$ ($|V| = 2000, |E| = 3000$).
-Notice that for all solvable instances with exact backtracking, the algorithmic result **exactly equals the theoretical lower bound** $\\\\lceil (3n+1)/2 \\\\rceil$!"""))
+
+**Key Mathematical & Empirical Takeaways:**
+1. **Lower Bound Optimality for $n \\ge 4$:** For all tested instances with $n \\ge 4$, our exact backtracking solver provably hits the theoretical lower bound $\\lceil (3n+1)/2 \\rceil$ with zero waste (including $es(GP(12, 5)) = 19$).
+2. **The Known Exception $GP(3, 1)$:** For $GP(3, 1)$, $\\text{LB} = \\lceil 10/2 \\rceil = 5$, but exact backtracking proved that no conflict-free labeling exists for $k \\le 5$. The true edge irregularity strength is $es(GP(3, 1)) = 6$. This is because $GP(3, 1)$ is isomorphic to the triangular prism ($K_3 \\square K_2$), where high degree-3 symmetry prevents lower-bound achievement.
+3. **Linear Scalability of the Greedy Algorithm:** While pure brute force has $O(k^{2n})$ state space and backtracking becomes intractable beyond $n = 16$, our **Greedy Constructive Heuristic** runs in strictly **linear time $O(V \\cdot \\Delta^2) = O(n)$**, labeling $GP(1000, 51)$ (2,000 vertices, 3,000 edges) in 2.38 seconds!"""))
 
 cells.append(nbf.v4.new_code_cell("""df_graph = pd.read_csv("../results/graph_benchmarks.csv")
 display(df_graph)"""))
@@ -296,9 +300,9 @@ In accordance with the Assessment Policy (Slide 18), project responsibilities we
 ---
 # Part 4: Conclusion & Key Findings
 1. **Graph Labeling (Problem 1):**
-   - For all tested Generalized Petersen Graphs $GP(n, p)$, our exact backtracking algorithm proved that $es(GP(n, p))$ **strictly matches the theoretical lower bound** $\\\\lceil (3n+1)/2 \\\\rceil$.
-   - The coupled spoke traversal order drastically prunes the branch-and-bound search tree, enabling exact solution of $GP(12, 5)$ in 0.32 seconds.
-   - The scalable heuristic algorithm operates in $O(V \\\\cdot \\\\Delta^2)$ time and effortlessly scales to $n = 1000$ (2,000 vertices, 3,000 edges) in 4.7 seconds.
+   - For all tested Generalized Petersen Graphs $GP(n, p)$ with $n \\ge 4$, our exact backtracking algorithm proved that $es(GP(n, p))$ **strictly matches the theoretical lower bound** $\\lceil (3n+1)/2 \\rceil$ (including $es(GP(12, 5)) = 19$). $GP(3, 1)$ is the known exception with $es = 6 > \\text{LB} = 5$.
+   - The coupled spoke traversal order drastically prunes the branch-and-bound search tree, enabling exact solution of $GP(12, 5)$ in 0.31 seconds.
+   - The scalable greedy heuristic operates in strictly linear $O(V \\cdot \\Delta^2) = O(n)$ time and effortlessly scales to $n = 1000$ (2,000 vertices, 3,000 edges) in 2.38 seconds.
 2. **NLP Comparative Pipeline (Problem 2):**
    - The custom hand-crafted pipeline outperforms the built-in NLTK pipeline by **2.6x in speed** (2.52s vs. 6.58s) while maintaining **100.0% top-vocabulary agreement**.
    - Shakespeare's corpus is heavily dominated by political/monarchical themes (29.8% Kingship), followed by ethical and romantic themes (18.9% Honor, 18.3% Love), providing quantitative evidence of Shakespeare's dramatic priorities."""))

@@ -103,8 +103,13 @@ def plot_labeled_gp_graph(n: int, p: int, filename: str):
 def plot_ship_wheel_graph(filename: str = "ship_wheel_visualization.png"):
     """Draws labeled Ship Wheel SW(8, 2) matching Slide 15."""
     sw = ShipWheelGraph(8, 2)
-    solver = ScalableHeuristicSolver(sw)
-    res = solver.solve(max_restarts=10)
+    # Use exact solver to prove optimal k=17 (lower bound match)
+    solver = ExactBacktrackingSolver(sw, timeout_per_k=30.0)
+    res = solver.find_minimum_k(max_k_offset=5)
+    if not res.is_valid:
+        # Fallback to heuristic if exact times out
+        solver = ScalableHeuristicSolver(sw)
+        res = solver.solve(max_restarts=10)
     labels = res.labels
     k = res.k
 

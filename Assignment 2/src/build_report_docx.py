@@ -52,7 +52,7 @@ def add_authors():
     p_affil.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p_affil.add_run("Division of Computing, Analytics and Mathematics, School of Science and Engineering\n"
                         "University of Missouri-Kansas City, MO 64110, USA\n"
-                        "Emails: tinanguyen@umkc.edu, haoran@umkc.edu\n"
+                        "Emails: tinanguyen@umkc.edu, hzwkg@umsystem.edu\n"
                         "Course: COMP-SCI 5592: Design and Analysis of Algorithms (Fall 2026)")
     r.font.size = Pt(10)
     r.font.italic = True
@@ -72,7 +72,7 @@ def add_abstract_keywords():
         "We establish that the adjacency list augmented with 2-hop neighborhood constraint precomputation is the optimal data structure. "
         "We propose two algorithmic paradigms: an exact constraint-satisfaction backtracking algorithm with coupled-spoke traversal, "
         "and a scalable heuristic local search algorithm. Empirical results show that our exact algorithm provably achieves the theoretical "
-        "lower bound es(GP(n, p)) = ceil((3n+1)/2) with zero waste (including es(GP(12, 5)) = 19), while the heuristic scales to "
+        "lower bound es(GP(n, p)) = ceil((3n+1)/2) with zero waste for all n >= 4 (including es(GP(12, 5)) = 19), while the heuristic scales to "
         "n = 1000 (|V|=2000, |E|=3000) in 4.75 seconds. In Problem 2, we implement a comparative 5-stage NLP pipeline on the complete "
         "works of William Shakespeare (5.46 MB, 124,456 lines). We compare a hand-crafted algorithmic pipeline (regex FSM tokenization, "
         "custom hash-table stopword filtering, pure Python Porter stemmer with dynamic programming memoization, and custom Bag-of-Words) "
@@ -500,9 +500,10 @@ add_body(
     "First, for Problem 1, we examined vertex k-labeling (edge irregular k-labeling) on Generalized Petersen Graphs GP(n, p), Ship Wheel Graphs, "
     "and Crab Graphs. We justified the Adjacency List augmented with 2-hop neighborhood conflict tables as the most space- and time-optimal "
     "representation. We introduced two distinct algorithmic strategies: an exact constraint-satisfaction backtracking algorithm employing coupled "
-    "spoke traversal, and a scalable greedy heuristic algorithm. The exact algorithm proved that for all solvable instances (including GP(12, 5)), "
-    "the algorithmic edge irregularity strength es(G) strictly matches the theoretical lower bound ceil((3n+1)/2) with zero waste. Meanwhile, "
-    "the scalable heuristic exhibited linear O(n) runtime and memory scaling, successfully labeling instances up to n = 1000 (2,000 vertices, "
+    "spoke traversal, and a scalable greedy heuristic algorithm. The exact algorithm proved that for all solvable instances with n >= 4 (including GP(12, 5)), "
+    "the algorithmic edge irregularity strength es(G) strictly matches the theoretical lower bound ceil((3n+1)/2) with zero waste. "
+    "The notable exception is GP(3, 1), where es = 6 exceeds the lower bound of 5 due to the tight symmetry constraints of the triangular prism. "
+    "The scalable heuristic exhibited linear O(n) runtime and memory scaling, successfully labeling instances up to n = 1000 (2,000 vertices, "
     "3,000 edges) in 4.75 seconds on standard hardware.\n"
     "Second, for Problem 2, we designed, benchmarked, and evaluated a comparative 5-stage NLP pipeline on Shakespeare's Complete Works (5.46 MB). "
     "Our custom algorithmic pipeline—featuring hand-crafted regex tokenization, custom hash tables, and a Martin Porter 1980 stemmer optimized "
