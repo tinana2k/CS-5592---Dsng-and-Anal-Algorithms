@@ -4,3 +4,7 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 Thumbs.db
+
+# Presentation scripts kept local only
+Assignment 2/presentation/*Script*
+*Presentation_Script*
