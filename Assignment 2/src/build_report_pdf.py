@@ -82,7 +82,7 @@ pdf.cell(0, 5, "Tina Nguyen (Lead: Graph Labeling)   &   Haoran (Lead: NLP Pipel
 pdf.set_font("Helvetica", "I", 9)
 pdf.set_text_color(80, 80, 80)
 pdf.cell(0, 4.5, "Division of Computing, Analytics and Mathematics, School of Science and Engineering", 0, 1, "C")
-pdf.cell(0, 4.5, "University of Missouri - Kansas City, MO 64110, USA | tinanguyen@umkc.edu, hzwkg@umsystem.edu", 0, 1, "C")
+pdf.cell(0, 4.5, "University of Missouri - Kansas City, MO 64110, USA | qpnh58@umsystem.edu, hzwkg@umsystem.edu", 0, 1, "C")
 pdf.cell(0, 4.5, "Course: COMP-SCI 5592: Design and Analysis of Algorithms (Fall 2026)", 0, 1, "C")
 pdf.ln(4)
 

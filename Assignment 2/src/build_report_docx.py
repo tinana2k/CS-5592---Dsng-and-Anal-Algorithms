@@ -52,7 +52,7 @@ def add_authors():
     p_affil.alignment = WD_ALIGN_PARAGRAPH.CENTER
     r = p_affil.add_run("Division of Computing, Analytics and Mathematics, School of Science and Engineering\n"
                         "University of Missouri-Kansas City, MO 64110, USA\n"
-                        "Emails: tinanguyen@umkc.edu, hzwkg@umsystem.edu\n"
+                        "Emails: qpnh58@umsystem.edu, hzwkg@umsystem.edu\n"
                         "Course: COMP-SCI 5592: Design and Analysis of Algorithms (Fall 2026)")
     r.font.size = Pt(10)
     r.font.italic = True

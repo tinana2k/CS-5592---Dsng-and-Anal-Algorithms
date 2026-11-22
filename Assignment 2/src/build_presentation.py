@@ -145,7 +145,7 @@ p2.font.color.rgb = CYAN
 p2.space_after = Pt(20)
 
 p3 = tf.add_paragraph()
-p3.text = "Tina Nguyen (tinanguyen@umkc.edu) — Lead: Graph Labeling & Algorithms\nHaoran (hzwkg@umsystem.edu) — Lead: NLP Pipeline & Performance"
+p3.text = "Tina Nguyen (qpnh58@umsystem.edu) — Lead: Graph Labeling & Algorithms\nHaoran (hzwkg@umsystem.edu) — Lead: NLP Pipeline & Performance"
 p3.font.size = Pt(13)
 p3.font.color.rgb = WHITE
 p3.space_after = Pt(12)

@@ -16,7 +16,7 @@ cells.append(nbf.v4.new_markdown_cell("""# Assignment 2: Vertex k-Labeling of Gr
 **Course:** COMP-SCI 5592 - Design & Analysis of Algorithms  
 **Term:** Fall 2026  
 **Authors:**
-- **Tina Nguyen** (tinanguyen@umkc.edu) - *Lead: Graph Labeling & Algorithms*
+- **Tina Nguyen** (qpnh58@umsystem.edu) - *Lead: Graph Labeling & Algorithms*
 - **Haoran** (hzwkg@umsystem.edu) - *Lead: NLP Pipeline & Performance Analysis*
 
 **Division of Computing, Analytics and Mathematics**  
