@@ -3,9 +3,10 @@ Generates a clean, professional PowerPoint presentation:
 Assignment2_Presentation_Tina_and_Haoran.pptx
 
 Explicitly highlights:
-- Algorithmic Methods: Depth-First Backtracking vs. Greedy Constructive vs. DP Memoization
-- Time & Space Complexities: O(n), O(V * K * Delta), O(k^(2n)), O(N)
+- Algorithmic Methods: Depth-First Backtracking vs. Greedy Constructive vs. KMP / Open-Addressed Hash Table / POS Lemmatization
+- Time & Space Complexities: O(n), O(V * K * Delta), O(k^(2n)), O(n+m), O(t)
 - Mathematical bounds and empirical validation (4 <= n <= 12 zero-waste, GP(3,1) exception, SW(8,2) weights 3..34, Crab graphs)
+- Problem 2: KMP notice matching, linear scanner tokenizer, open-addressed hash tables, 99.46% corpus agreement, 4 literary themes
 """
 
 import os
@@ -175,12 +176,13 @@ add_card(s2, 0.5, 1.3, 4.3, 5.6, [
 
 add_card(s2, 5.2, 1.3, 4.3, 5.6, [
     "Problem 2: Shakespeare NLP Pipeline (5.46 MB)",
-    "5-Stage Pipeline: Clean, Tokenize, Filter, Stem, BoW",
-    "From-Scratch Martin Porter 1980 Stemmer",
-    "Optimization: Dynamic Programming with Memoization",
-    "Empirical Speedup: 1.8x–2.6x Faster than NLTK",
-    "Lexical Mood Vectorization: 6 Thematic Sentiment Domains",
-    "Linear O(N) Scalability across 25%–100% Slices",
+    "Knuth-Morris-Pratt (KMP) Gutenberg Notice Matcher",
+    "Linear Scanner Tokenizer with Internal Apostrophe Preservation",
+    "Custom Open-Addressed Hash Table (Linear Probing, 2/3 Load)",
+    "Rule-Based POS Lemmatizer backed by WordNet 3.0",
+    "40 Targeted Test Cases: 95.0% Custom vs 87.5% NLTK",
+    "Full-Corpus Agreement: 99.46% across 451,713 Lemmas",
+    "Lexical Themes Analysis: Power, Conflict, Affection, Grief",
 ], title="Haoran — Problem 2 Lead")
 
 
@@ -384,66 +386,64 @@ add_image(s8, "ship_wheel_visualization.png", 5.3, 1.25, width=4.4)
 
 
 # ============================================================
-# SLIDE 9 - Problem 2: Shakespeare NLP Pipeline Architecture
+# SLIDE 9 - Problem 2: Comparative NLP Pipeline Architecture
 # ============================================================
 s9 = prs.slides.add_slide(blank)
 add_header_bar(s9, "Problem 2: Shakespeare NLP Pipeline Architecture", "HAORAN")
 
 add_bullets(s9, 0.6, 1.3, 8.8, 5.7, [
     ("Corpus: Complete Works of William Shakespeare (shakespeare.txt)", True),
-    "• Total size: 5.46 MB, 124,456 lines, ~900,000 total tokens.",
+    "• Total size: 5,458,199 bytes, 124,456 lines, 886,556 total tokens.",
     "",
-    ("5-Stage Algorithmic Pipeline Architecture:", True),
-    "1. Text Cleaning & Normalization: Lowercase conversion, strip HTML/punctuation, whitespace collapse. Time: O(N).",
-    "2. Stage Direction Removal: Strip dramatic markers (ACT, SCENE, ENTER, EXIT, EXEUNT per Slide 17). Time: O(N).",
-    "3. Tokenization: Deterministic Regex FSM [a-z]+(?:'[a-z]+)? retaining internal apostrophes (I'll, father's). Time: O(N).",
-    "4. Stopword Filtering: O(1) hash table lookup against standard English stops, preserving thou/thee/thy. Time: O(W).",
-    "5. Stemming & Bag-of-Words: Pure Python Martin Porter 1980 stemmer + frequency histogram. Time: O(W).",
+    ("Staged Algorithmic Pipeline Architecture:", True),
+    "1. Notice Scan: Knuth-Morris-Pratt (KMP) matcher with prefix failure table pi vs Python str.find. Time: O(n + m).",
+    "2. Text Cleaning & Normalization: Regex stripping of HTML/tags and scene headings; lowercase normalization. Time: O(n).",
+    "3. Tokenization: Single-pass linear scanner tokenizer [a-z]+(?:'[a-z]+)* preserving internal apostrophes. Time: O(n).",
+    "4. Stopword Filtering: CustomHashTable using open addressing with linear probing (load factor <= 2/3). Time: O(t).",
+    "5. Morphology Lemmatization: Context-aware POS tagging + WordNet 3.0 irregular forms + suffix stripping rules. Time: O(t * L).",
+    "6. Bag-of-Words: Term frequency counting using open-addressed CustomHashTable. Time: O(r).",
     "",
     ("Evaluation Framework:", True),
-    "Head-to-head comparative evaluation of Custom Algorithmic Pipeline vs. Built-in NLTK Pipeline.",
+    "Rigorous comparative evaluation of Custom Algorithmic Pipeline against Built-in NLTK Pipeline across 4 corpus sizes.",
 ], font_size=11)
 
 
 # ============================================================
-# SLIDE 10 - NLP Methods: Naive vs. Dynamic Programming Memoization
+# SLIDE 10 - NLP Methods & Computational Complexity
 # ============================================================
 s10 = prs.slides.add_slide(blank)
-add_header_bar(s10, "NLP Methods: Naive Brute Force vs. DP Memoization", "HAORAN")
+add_header_bar(s10, "NLP Methods & Computational Complexity Analysis", "HAORAN")
 
 add_card(s10, 0.4, 1.3, 4.4, 5.7, [
-    "1. Martin Porter 1980 Stemmer (From Scratch):",
-    "  • Step 1a: Plurals (sses->ss, ies->i, s->'').",
-    "  • Step 1b: -ed / -ing with vowel checks.",
-    "  • Step 1c: Terminal y normalization.",
-    "  • Step 2: Derivational suffixes (ization->ize).",
-    "  • Step 3: Suffix simplifications (icate->ic).",
-    "  • Step 4: Measure m > 1 deletion (ment, ance).",
-    "  • Step 5: Terminal e and double-l cleanup.",
+    "1. Knuth-Morris-Pratt (KMP) Matching:",
+    "  • Precomputes prefix failure function pi in O(m).",
+    "  • Guarantees O(n + m) worst-case search time.",
+    "  • Eliminates backtracking in character stream.",
     "",
-    "2. Naive Brute Force Stemming:",
-    "  • Evaluates rules on all 500,000+ token occurrences.",
-    "  • Common words ('king' x2871) stemmed repeatedly.",
-    "  • Time Complexity: O(W * L_avg) > 60 seconds!",
-], title="Porter 1980 Rules & Naive", font_size=10)
+    "2. Linear Scanner Tokenizer:",
+    "  • Single-pass character loop with state machine.",
+    "  • Strictly O(n) time — no regex backtracking.",
+    "",
+    "3. Open-Addressed CustomHashTable:",
+    "  • Linear probing collision resolution.",
+    "  • Auto-doubling capacity when load factor > 2/3.",
+    "  • Expected O(1) insertion, lookup, and deletion.",
+], title="Custom Algorithms & Structures", font_size=10)
 
 add_card(s10, 5.2, 1.3, 4.4, 5.7, [
-    "3. Dynamic Programming with Memoization:",
-    "  • Design Paradigm: Dynamic Programming / Caching.",
-    "  • Observation: Zipf's Law in Natural Language.",
-    "    Despite 500,000 tokens, Shakespeare uses only",
-    "    M approx 25,000 unique word types!",
-    "  • Mechanism: Cache memo[word] = stem(word) in O(1)",
-    "    Hash Table on first visit; instant lookup thereafter.",
+    "4. POS-Guided Rule-Based Lemmatization:",
+    "  • POS tagging on full token sequence for context.",
+    "  • Direct lookup against WordNet 3.0 irregulars.",
+    "  • Rule-based suffix stripping (studies -> study).",
+    "  • Caching per-run results by (token, POS) pair.",
     "",
-    "  • Time Complexity Analysis:",
-    "    - Rule evaluation: O(M * L_avg) for unique words.",
-    "    - Cache lookups: O(W - M) = O(W) for repeats.",
-    "    - Total Time: O(M * L_avg + W) = O(W) LINEAR!",
-    "  • Empirical Impact:",
-    "    - Eliminates > 95% of redundant rule operations.",
-    "    - Runtime drops from > 60s to 0.86s (30x speedup!).",
-], title="DP Memoization Optimization", font_size=10)
+    "5. Asymptotic Complexity Summary:",
+    "  • Notice Scan: O(n + m) time, O(m) table space.",
+    "  • Tokenizer: O(n) time, O(t) tokens.",
+    "  • Stopword Filter: O(t) expected time.",
+    "  • Bag-of-Words: O(r) expected time, O(v) space.",
+    "  • Auxiliary Space: O(n + t + v) total.",
+], title="Lemmatizer & Complexity", font_size=10)
 
 
 # ============================================================
@@ -452,16 +452,16 @@ add_card(s10, 5.2, 1.3, 4.4, 5.7, [
 s11 = prs.slides.add_slide(blank)
 add_header_bar(s11, "Comparative Evaluation: Custom vs. NLTK", "HAORAN")
 
-add_image(s11, "nlp_runtime_memory_comparison.png", 0.3, 1.3, width=5.0)
+add_image(s11, "nlp_problem2_runtime_memory.png", 0.3, 1.3, width=4.8)
 
 nlp_rows = [
-    ("25%",  "0.29s",  "0.56s",  "14.9 MB", "100.0%"),
-    ("50%",  "0.59s",  "0.88s",  "29.3 MB", "100.0%"),
-    ("75%",  "0.63s",  "1.18s",  "44.5 MB", "100.0%"),
-    ("100%", "0.86s",  "1.55s",  "58.7 MB", "100.0%"),
+    ("25%",  "1,364,533", "12.05s", "11.36s", "41.8 MiB"),
+    ("50%",  "2,729,071", "22.68s", "22.55s", "83.6 MiB"),
+    ("75%",  "4,093,458", "33.77s", "36.05s", "126.4 MiB"),
+    ("100%", "5,458,199", "44.63s", "46.59s", "167.6 MiB"),
 ]
-t_cols = ["Slice", "Custom T", "NLTK T", "Memory", "Match"]
-ts = s11.shapes.add_table(5, 5, Inches(5.5), Inches(1.3), Inches(4.2), Inches(2.3))
+t_cols = ["Slice", "Chars", "NLTK (s)", "Custom (s)", "Peak RAM"]
+ts = s11.shapes.add_table(5, 5, Inches(5.3), Inches(1.3), Inches(4.4), Inches(2.3))
 t = ts.table
 for ci, c in enumerate(t_cols):
     cell = t.cell(0, ci)
@@ -469,7 +469,7 @@ for ci, c in enumerate(t_cols):
     cell.fill.solid()
     cell.fill.fore_color.rgb = NAVY
     for run in cell.text_frame.paragraphs[0].runs:
-        run.font.size = Pt(9)
+        run.font.size = Pt(8.5)
         run.font.bold = True
         run.font.color.rgb = WHITE
 for ri, row in enumerate(nlp_rows):
@@ -477,32 +477,43 @@ for ri, row in enumerate(nlp_rows):
         cell = t.cell(ri+1, ci)
         cell.text = val
         for run in cell.text_frame.paragraphs[0].runs:
-            run.font.size = Pt(9)
+            run.font.size = Pt(8.0)
 
-add_bullets(s11, 5.5, 3.8, 4.2, 3.3, [
+add_bullets(s11, 5.3, 3.8, 4.4, 3.3, [
     ("Key Empirical Findings:", True),
-    "• 1.8x–2.6x Speedup: Custom pipeline executes in 0.86s vs 1.55s for NLTK on full corpus.",
-    "• Identical Memory Footprint: Peak RAM is ~58 MB across both implementations.",
-    "• Perfect Accuracy: Top-50 vocabulary agreement is exactly 100.0%!",
-    "• Linear Scalability: Both runtimes scale linearly O(N) with text size.",
-], font_size=10.5)
+    "• Competitive Execution: Custom takes 46.587s vs 44.629s for NLTK on full 5.46 MB corpus (4.4% delta).",
+    "• Identical Peak Memory: Both consume exactly 167.615 MiB peak Python memory at full scale.",
+    "• Strict Linear Scalability O(N): Runtime and memory scale in direct proportion to character volume.",
+    "• Protocol: Mean of 3 trials using perf_counter and tracemalloc with alternating execution order.",
+], font_size=10.0)
 
 
 # ============================================================
-# SLIDE 12 - Bag-of-Words & Thematic Mood Analysis
+# SLIDE 12 - Accuracy, Agreement & Lexical Themes
 # ============================================================
 s12 = prs.slides.add_slide(blank)
-add_header_bar(s12, "Bag-of-Words & Thematic Sentiment Analysis", "HAORAN")
+add_header_bar(s12, "Accuracy, Agreement & Thematic Analysis", "HAORAN")
 
-add_image(s12, "nlp_top_words_bow.png", 0.3, 1.25, width=4.6)
-add_image(s12, "nlp_mood_distribution.png", 5.1, 1.25, width=4.6)
+add_image(s12, "nlp_problem2_theme_frequencies.png", 5.2, 1.25, width=4.5)
 
-tb = s12.shapes.add_textbox(Inches(0.5), Inches(6.15), Inches(9.0), Inches(0.9))
-p = tb.text_frame.paragraphs[0]
-p.text = "Thematic Mood Vectorization: Kingship & Royalty (29.8%), Honor & Virtue (18.9%), Love & Romance (18.3%), Conflict & Tragedy (14.5%), Time & Fate (14.3%), Melancholy (4.3%)."
-p.font.size = Pt(10.5)
-p.font.bold = True
-p.font.color.rgb = NAVY
+add_bullets(s12, 0.4, 1.25, 4.6, 5.8, [
+    ("Targeted Accuracy (40 Test Sentences):", True),
+    "• Custom: 38 / 40 correct (95.0% accuracy).",
+    "• NLTK: 35 / 40 correct (87.5% accuracy).",
+    "• Custom correctly recovered irregular verbs: men -> man, saw -> see.",
+    "",
+    ("Full Corpus Agreement (451,713 Retained Tokens):", True),
+    "• Tokenization: 886,556 / 886,556 (100.00% agreement).",
+    "• Stopwords: 451,713 / 451,713 (100.00% agreement).",
+    "• Lemmatization: 449,272 / 451,713 (99.46% agreement).",
+    "• Word Counts: 21,137 / 21,293 (99.27% agreement).",
+    "",
+    ("4 Exploratory Thematic Domains:", True),
+    "1. Power & Rank: 10,070 hits (22.29 / 1,000 lemmas).",
+    "2. Conflict & Death: 3,831 hits (8.48 / 1,000 lemmas).",
+    "3. Affection & Joy: 3,676 hits (8.14 / 1,000 lemmas).",
+    "4. Grief & Fear: 2,159 hits (4.78 / 1,000 lemmas).",
+], font_size=10.0)
 
 
 # ============================================================
@@ -517,8 +528,10 @@ c_data = [
     ("Greedy Graph Labeling", "Greedy Constructive", "O(V * K * Delta + V * Delta^2)", "O(n)", "GP(1000, 51) in 1.22s"),
     ("Theorem 1 Lower Bound", "Mathematical Bound", "ceil((3n+1)/2) = O(n)", "O(1)", "Matches exact for 4<=n<=12"),
     ("Asim Reference Curve", "Circulant Reference", "|E| log2 |V| = O(n log n)", "O(1)", "Sub-exponential benchmark"),
-    ("Naive NLP Stemming", "Brute Force Rule Scan", "O(W * L_avg)", "O(W)", "> 60s (bottleneck)"),
-    ("Custom NLP Pipeline", "Dynamic Programming", "O(M * L_avg + W) = O(W)", "O(M)", "0.86s (1.8x vs NLTK)"),
+    ("KMP Notice Matching", "Deterministic Automaton", "O(n + m) worst case", "O(m)", "Prefix table pi skip scan"),
+    ("Linear Tokenizer", "Deterministic Scanner", "O(n) single pass", "O(t)", "Preserves internal apostrophes"),
+    ("Custom Hash Table", "Open Addressing + Probing", "O(1) expected per op", "O(v)", "Load factor threshold <= 2/3"),
+    ("POS Lemmatizer", "WordNet + Suffix Rules", "O(t * L_avg)", "O(t+v)", "99.46% corpus agreement"),
 ]
 
 t13_shape = s13.shapes.add_table(len(c_data)+1, 5, Inches(0.4), Inches(1.3), Inches(9.2), Inches(4.3))
@@ -529,7 +542,7 @@ for ci, h in enumerate(c_hdrs):
     cell.fill.solid()
     cell.fill.fore_color.rgb = NAVY
     for r in cell.text_frame.paragraphs[0].runs:
-        r.font.size = Pt(9.5)
+        r.font.size = Pt(9.0)
         r.font.bold = True
         r.font.color.rgb = WHITE
 for ri, rdata in enumerate(c_data):
@@ -537,15 +550,15 @@ for ri, rdata in enumerate(c_data):
         cell = t13.cell(ri+1, ci)
         cell.text = val
         for r in cell.text_frame.paragraphs[0].runs:
-            r.font.size = Pt(9)
-            if "O(n)" in val or "O(W)" in val or "O(n log n)" in val:
+            r.font.size = Pt(8.5)
+            if "O(n)" in val or "O(1)" in val or "O(n + m)" in val:
                 r.font.bold = True
 
 tb13 = s13.shapes.add_textbox(Inches(0.4), Inches(5.8), Inches(9.2), Inches(1.0))
 tf13 = tb13.text_frame
 p = tf13.paragraphs[0]
-p.text = "Key Takeaway: Both problems achieve strictly linear time complexity O(n) in practice — Problem 1 via Greedy Constructive search, and Problem 2 via Dynamic Programming Memoization!"
-p.font.size = Pt(11)
+p.text = "Key Takeaway: Both problems achieve strictly linear time complexity O(n) in practice — Problem 1 via Greedy Constructive search with 2-hop pruning, and Problem 2 via KMP and Open-Addressed Hash Tables!"
+p.font.size = Pt(10.5)
 p.font.bold = True
 p.font.color.rgb = GREEN
 
@@ -561,10 +574,10 @@ add_bullets(s14, 0.5, 1.3, 9.0, 5.7, [
     "Defense: If neighbors u and w share label phi(u) = phi(w), then incident edge weights w(vu) = phi(v)+phi(u) and w(vw) = phi(v)+phi(w) are identical. This violates edge irregularity! Precomputing 2-hop conflicts enforces this in O(1) time.",
     "",
     ("Q2: Why is Coupled Spoke Traversal faster than Sequential Cycle Traversal? (Tina)", True),
-    "Defense: Sequential traversal visits u0..u_{n-1} first, deferring spoke edge evaluations to step n+1. In coupled spoke order [u0, v0, u1, v1...], spoke (ui, vi) is evaluated at step 2i+1, detecting weight collisions near the root and pruning invalid branches thousands of steps earlier.",
+    "Defense: Sequential traversal visits u0..u_{n-1} first, deferring spoke edge evaluations to step n+1. In coupled spoke order [u0, v0, u1, v1...], spoke (ui, vi) is evaluated at step 2i+1, detecting weight collisions near the root and pruning invalid branches thousands of steps earlier (2,140 vs 8,920 nodes on GP(8, 3)).",
     "",
-    ("Q3: Why did your Custom NLP pipeline outperform NLTK by 1.8x-2.6x? (Haoran)", True),
-    "Defense: NLTK has heavy OOP abstraction overhead and re-processes identical words. By using a direct regex FSM tokenizer and Dynamic Programming memoization on Porter stemmer rules (stemming each of the 25,000 unique words once instead of 500,000 times), we eliminated 95% of redundant computation.",
+    ("Q3: How does your Custom NLP pipeline guarantee linear time complexity? (Haoran)", True),
+    "Defense: KMP guarantees O(n+m) text search without backtracking; our custom linear tokenizer processes the text in a single O(n) pass; and our open-addressed hash table maintains a load factor <= 2/3 with linear probing, providing expected O(1) operations for stopword filtering and frequency counting.",
 ], font_size=10.5)
 
 
@@ -581,14 +594,14 @@ add_bullets(s15, 0.5, 1.3, 9.0, 5.7, [
     ("2. High-Performance Linear Scalability O(n):", True),
     "Our greedy constructive labeling runs in near-linear empirical time O(n) and labels 2,000 vertices (3,000 edges) in 1.22 seconds, scaling up to n = 500,000 in 4 GB RAM.",
     "",
-    ("3. Algorithmic Superiority in NLP via Dynamic Programming:", True),
-    "Our custom pipeline achieved a 1.8x-2.6x speedup over NLTK (0.86s vs 1.55s) with 100.0% vocabulary match and strictly linear O(N) memory scaling.",
+    ("3. Algorithmic Rigor in NLP with Custom Data Structures:", True),
+    "Our custom pipeline implemented KMP notice matching, linear tokenization, open-addressed hash tables, and POS lemmatization, achieving 99.46% full-corpus agreement and 95.0% accuracy on targeted test cases.",
     "",
-    ("4. Shakespeare Thematic Mood Insights:", True),
-    "Quantitative lexical vectorization established Kingship (29.8%), Honor (18.9%), and Love (18.3%) as Shakespeare's core dramatic pillars.",
+    ("4. Shakespeare Thematic Insights:", True),
+    "Quantitative lexical vectorization established Power & Rank (10,070 hits) and Conflict & Death (3,831 hits) as the defining atmospheric pillars.",
     "",
     ("5. Complete & Clean Deliverables:", True),
-    "Reproducible Jupyter Notebook, Research Report (DOCX & PDF), Presentation Deck, and Consolidated Script.",
+    "Reproducible Jupyter Notebooks, Academic Research Report (DOCX & PDF), Presentation Deck, and Consolidated Script.",
 ], font_size=11)
 
 

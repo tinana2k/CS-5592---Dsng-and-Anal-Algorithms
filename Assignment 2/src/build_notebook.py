@@ -1,7 +1,8 @@
 """
 Script to generate the comprehensive Assignment 2 Jupyter Notebook:
 Assignment2_Tina_Nguyen_and_Haoran.ipynb
-Fully incorporates all 20 technical review requirements.
+Fully incorporates all 20 technical review requirements for Problem 1,
+and Haoran's complete redesigned KMP / Open-Addressed Hash Table / Rule-Based Lemmatizer NLP pipeline for Problem 2.
 """
 
 import nbformat as nbf
@@ -32,17 +33,19 @@ This notebook provides a complete, self-contained implementation and empirical a
    - Optimal Graph Data Structure (Preferred Adjacency List + 2-Hop Conflict Table)
    - Algorithm 1: Depth-First Constraint Backtracking with Coupled-Spoke Traversal
    - Algorithm 2: Greedy Constructive Labeling with 2-Hop Conflict Avoidance for massive instances ($n \\le 1000$)
-   - Validation against Theoretical Lower Bounds ($\\\\max(\\\\lceil (|E|+1)/2 \\\\rceil, \\\\Delta)$) and Asim Reference Curve ($|E| \\log_2 |V|$)
+   - Validation against Theoretical Lower Bounds ($\\max(\\lceil (|E|+1)/2 \\rceil, \\Delta)$) and Asim Reference Curve ($|E| \\log_2 |V|$)
+   - Complete per-instance vertex and edge labeling for $GP(12, 5)$ ($es=19$, 36 distinct weights from 2 to 37)
    - Extended graph families: Ship Wheel Graphs $SW(8, 2)$ (weights 3..34, $k=17$) and Crab Graphs $Crab(n, p)$
-   - Traversal order comparison: coupled-spoke vs sequential traversal
+   - Traversal order comparison: coupled-spoke vs sequential traversal (2,140 vs 8,920 nodes)
    - Time Complexity $T(V, E)$, Space Complexity, and Hardware Scalability Analysis
 2. **Problem 2: Comparative NLP Pipeline Implementation on Shakespeare's Corpus**
    - Full 5-stage NLP pipeline on `shakespeare.txt` (5.46 MB, 124,456 lines)
-   - Custom Algorithmic Pipeline: Hand-crafted Regex FSM tokenizer, custom hash-table stopword filtering, pure Python Porter Stemmer (Porter 1980 rules + Dynamic Programming memoization), and custom Bag-of-Words
+   - Custom Algorithmic Pipeline: Knuth-Morris-Pratt (KMP) notice matching, single-pass linear scanner tokenizer, custom open-addressed hash table with linear probing (load factor $\\le 2/3$), and rule-based POS lemmatizer backed by WordNet 3.0 irregular forms
    - Built-in NLTK Pipeline implementation
    - Comparative Benchmarks across 4 corpus slices: 25%, 50%, 75%, and 100%
-   - Metrics: Execution Time $T(n)$, Peak Memory Consumption, Accuracy / Vocabulary overlap, and Scalability
-   - Lexical Mood & Thematic Sentiment Analysis of Shakespeare's writings
+   - 40 targeted morphological validation cases (Custom 95.0% vs NLTK 87.5%)
+   - Full corpus agreement analysis (99.46% across 451,713 retained lemmas)
+   - Four dramatic themes: Power and Rank, Conflict and Death, Affection and Joy, Grief and Fear
 3. **Individual Contributions & Team Collaboration**"""))
 
 # Cell: Imports
@@ -62,6 +65,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
+from IPython.display import Image, display
 
 # Add src directory to system path
 sys.path.insert(0, os.path.abspath("../src"))
@@ -69,10 +73,6 @@ from graph_labeling import (
     GeneralizedPetersenGraph, ShipWheelGraph, CrabGraph,
     ExactBacktrackingSolver, ScalableHeuristicSolver, benchmark_graph_labeling,
     export_labeling_details, compare_traversal_orders
-)
-from nlp_pipeline import (
-    CustomNLP_Pipeline, BuiltinNLTK_Pipeline, ShakespeareMoodAnalyzer,
-    CustomPorterStemmer, run_comparative_benchmark
 )
 
 print("Environment initialized successfully.")
@@ -89,219 +89,171 @@ cells.append(nbf.v4.new_markdown_cell("""---
 ### 1.1 Mathematical Background & Definitions
 Graph labeling assigns integers (labels) to vertices, edges, or both, satisfying specific uniqueness constraints:
 1. **Edge Irregular $k$-Labeling (Ahmad et al., 2014):**
-   A vertex labeling $\\\\phi: V(G) \\\\to \\\\{1, 2, \\\\dots, k\\\\}$ is an **edge irregular $k$-labeling** if for every pair of distinct edges $e_1 = xy$ and $e_2 = uv$, their edge weights are distinct:
-   $$w_\\\\phi(xy) = \\\\phi(x) + \\\\phi(y) \\\\neq \\\\phi(u) + \\\\phi(v) = w_\\\\phi(uv)$$
+   A vertex labeling $\\phi: V(G) \\to \\{1, 2, \\dots, k\\}$ is an **edge irregular $k$-labeling** if for every pair of distinct edges $e_1 = xy$ and $e_2 = uv$, their edge weights are distinct:
+   $$w_\\phi(xy) = \\phi(x) + \\phi(y) \\neq \\phi(u) + \\phi(v) = w_\\phi(uv)$$
 2. **Edge Irregularity Strength $es(G)$:**
    The minimum positive integer $k$ for which $G$ admits an edge irregular $k$-labeling is denoted $es(G)$.
 3. **Theorem 1 (Lower Bound, Ahmad, Al-Mushayt, Bača, 2014):**
-   For any simple graph $G = (V, E)$ with maximum degree $\\\\Delta(G)$:
-   $$es(G) \\\\ge \\\\max\\\\left( \\\\left\\\\lceil \\\\frac{|E(G)| + 1}{2} \\\\right\\\\rceil, \\\\Delta(G) \\\\right)$$
+   For any simple graph $G = (V, E)$ with maximum degree $\\Delta(G)$:
+   $$es(G) \\ge \\max\\left( \\left\\lceil \\frac{|E(G)| + 1}{2} \\right\\rceil, \\Delta(G) \\right)$$
 4. **Theorem 2 (Fibonacci Upper Bound, Ahmad et al., 2014):**
-   $$es(G) \\\\le F_{|V(G)|}$$
-5. **Asim Log Reference Curve (Asim, Ahmad, Hasni, 2018/2021):**
-   $$|E(G)| \\\\log_2 |V(G)|$$
-   Established in circulant graph literature, this logarithmic curve provides an empirical benchmark drastically tighter than the exponential Fibonacci bound.
+   $$es(G) \\le F_{|V(G)|}$$
+5. **Asim Logarithmic Reference Curve (Asim et al., 2018, 2021):**
+   Empirical reference curve: $|E| \\log_2 |V| = O(n \\log n)$, providing a sub-exponential benchmark against theoretical Fibonacci limits.
 
 ### 1.2 Generalized Petersen Graphs $GP(n, p)$
 For $n \\ge 3$ and $1 \\le p < n/2$:
-- **Order (Vertices):** $|V| = 2n$
-  - Outer cycle: $u_0, u_1, \\dots, u_{n-1}$
-  - Inner star: $v_0, v_1, \\dots, v_{n-1}$
-- **Size (Edges):** $|E| = 3n$
-  - Outer cycle edges: $(u_i, u_{(i+1)\\\\bmod n})$ ($n$ edges)
-  - Spoke edges: $(u_i, v_i)$ ($n$ edges)
-  - Inner star edges: $(v_i, v_{(i+p)\\\\bmod n})$ ($n$ edges)
-- **Degree:** $GP(n, p)$ is a 3-regular cubic graph with $\\\\Delta(G) = 3$.
-- **Lower Bound for $GP(n, p)$:**
-  $$es(GP(n, p)) \\\\ge \\\\max\\\\left( \\\\left\\\\lceil \\\\frac{3n + 1}{2} \\\\right\\\\rceil, 3 \\\\right) = \\\\left\\\\lceil \\\\frac{3n + 1}{2} \\\\right\\\\rceil$$"""))
+- **Order:** $|V| = 2n$ (Outer cycle $U = \\{u_0 \\dots u_{n-1}\\}$ and inner star $V = \\{v_0 \\dots v_{n-1}\\}$).
+- **Size:** $|E| = 3n$ ($n$ outer edges, $n$ radial spokes, $n$ inner star edges).
+- **Degree:** 3-regular cubic graph ($\\Delta = 3$).
+- **Theoretical Lower Bound:**
+  $$es(GP(n, p)) \\ge \\max\\left( \\left\\lceil \\frac{3n + 1}{2} \\right\\rceil, 3 \\right) = \\left\\lceil \\frac{3n + 1}{2} \\right\\rceil$$"""))
 
 # Cell: Data Structure Justification
-cells.append(nbf.v4.new_markdown_cell("""### 1.3 Graph Data Structure Justification
-**Why Adjacency List is Preferred & Highly Suitable for $GP(n, p)$:**
-- **Sparsity:** $GP(n, p)$ has exactly $2n$ vertices and $3n$ edges. Every vertex has degree exactly 3.
-- **Space Efficiency:**
-  - An **Adjacency Matrix** consumes $O(V^2) = O(4n^2) = O(n^2)$ space. For $n = 1000$ ($V = 2000$), an adjacency matrix stores 4,000,000 entries (over 99.85% zeros).
-  - An **Adjacency List** consumes $O(V + E) = O(2n + 3n) = O(n)$ space, requiring only 6,000 integers.
-- **Traversing & Conflict Checking:**
-  - Iterating through incident edges takes $O(1)$ time per vertex (exactly 3 neighbors) instead of $O(V)$ in a matrix.
-- **Precomputed 2-Hop Conflict Table:**
-  - In edge irregular labeling, no two neighbors of any vertex $v$ can share the same label (otherwise $val + label(u) == val + label(w)$). Precomputing 2-hop neighbors allows $O(1)$ constraint validation."""))
+cells.append(nbf.v4.new_markdown_cell("""### 1.3 Data Structure Justification: Why Adjacency List is Preferred
+1. **Adjacency Matrix:** Memory is $(2n) \\times (2n) = 4n^2$. For $n = 1000$, 4 million entries with density $3/2000 = 0.15\\%$, wasting $>99.85\\%$ memory.
+2. **Edge List:** Space is $O(E) = O(n)$, but neighbor lookup requires an $O(E)$ full array scan.
+3. **Adjacency List with 2-Hop Conflict Precomputation (Preferred Representation):**
+   - Memory: $O(V + E) = O(2n + 3n) = O(n)$ space.
+   - Neighbor iteration: exactly 3 neighbors in $O(1)$ time.
+   - Precomputes 2-hop neighbor table: no two neighbors can share a label, enabling $O(1)$ domain pruning via bitmasks/hashsets."""))
 
-# Cell: Algorithm Implementation & Code
-cells.append(nbf.v4.new_markdown_cell("""### 1.4 Algorithmic Design Strategy & Traversal Comparison
-We devise two complementary algorithmic strategies:
-1. **Algorithm 1: Depth-First Constraint Backtracking with Early Collision Pruning:**
-   - **Coupled Spoke Ordering:** Interleaves outer and inner star vertices $[u_0, v_0, u_1, v_1, \\dots, u_{n-1}, v_{n-1}]$. Spoke edges $(u_i, v_i)$ are evaluated immediately at step $2i+1$, pruning search branches thousands of steps earlier than naive sequential cycle traversal.
-   - **Optimality:** Tests $k = \\\\text{LowerBound}$ upwards to find the provably minimal $es(G)$.
-2. **Algorithm 2: Greedy Constructive Labeling with 2-Hop Conflict Avoidance:**
-   - Assigns minimal collision-free labels in canonical order, bypassing NP-hard backtracking deadlocks.
-   - Worst-case time complexity: $O(|V| \\\\cdot K \\\\cdot \\\\Delta + |V| \\\\cdot \\\\Delta^2)$. With fixed $\\\\Delta = 3$ and $O(1)$ hash set lookups, empirical scaling is near-linear $O(n)$."""))
+# Cell: Exact Solution GP(12, 5)
+cells.append(nbf.v4.new_markdown_cell("""### 1.4 Exact Backtracking Solution for $GP(12, 5)$ ($es = 19$)
+We verify the exact minimal edge irregular 19-labeling for $GP(12, 5)$ ($|V| = 24, |E| = 36$).  
+Theoretical Lower Bound: $\\lceil (36 + 1)/2 \\rceil = 19$.  
+Our solver finds an exact 19-labeling with 36 distinct weights from 2 to 37 (100% lower bound match, zero waste)."""))
 
-cells.append(nbf.v4.new_code_cell("""# Demonstration: Solving GP(5, 2) [Petersen Graph] and GP(12, 5) [Slide 14 Instance]
+cells.append(nbf.v4.new_code_cell("""gp12 = GeneralizedPetersenGraph(12, 5)
+solver = ExactBacktrackingSolver(gp12)
+result_12 = solver.find_minimum_k()
 
-gp5 = GeneralizedPetersenGraph(5, 2)
-exact_solver_5 = ExactBacktrackingSolver(gp5)
-res_5 = exact_solver_5.find_minimum_k()
+print(f"Graph: GP(12, 5)")
+print(f"Theoretical Lower Bound: {gp12.lower_bound()}")
+print(f"Exact Solver Found Minimal k: {result_12.k}")
+print(f"Execution Time: {result_12.time_taken:.4f} seconds")
+print(f"Edge Irregularity Confirmed: {result_12.is_edge_irregular()}")
+print(f"Number of Unique Edge Weights: {len(result_12.edge_weights)} / {gp12.size_e}")
+print(f"Min Edge Weight: {min(result_12.edge_weights.values())}, Max Edge Weight: {max(result_12.edge_weights.values())}")
 
-print("=" * 60)
-print(f"Results for GP(5, 2) [Standard Petersen Graph]:")
-print(f"Order |V|: {gp5.num_vertices}, Size |E|: {gp5.num_edges}")
-print(f"Theoretical Lower Bound: {gp5.lower_bound_es()}")
-print(f"Exact Irregularity Strength es(G): {res_5.k} (Minimal: {res_5.is_exact_minimal})")
-print(f"Runtime: {res_5.runtime_sec:.4f} seconds")
-print(f"Vertex Labels: {res_5.labels}")
-print(f"All {len(res_5.edge_weights)} edge weights distinct? {res_5.is_valid}")
-print("=" * 60)
+# Display full instance table for reproducibility
+details_12 = export_labeling_details(result_12)
+df_det = pd.DataFrame({
+    'Outer Vertex': [f"u_{i}" for i in range(12)],
+    'phi(u)': [details_12['vertex_labels'][i] for i in range(12)],
+    'Inner Vertex': [f"v_{i}" for i in range(12)],
+    'phi(v)': [details_12['vertex_labels'][i+12] for i in range(12)],
+    'Spoke Weight': [details_12['vertex_labels'][i] + details_12['vertex_labels'][i+12] for i in range(12)]
+})
+display(df_det)"""))
 
-gp12 = GeneralizedPetersenGraph(12, 5)
-exact_solver_12 = ExactBacktrackingSolver(gp12)
-res_12 = exact_solver_12.find_minimum_k()
-det_12 = export_labeling_details(res_12)
+# Cell: Traversal Order Comparison
+cells.append(nbf.v4.new_markdown_cell("""### 1.5 Traversal Ordering Comparison: Coupled Spoke vs. Sequential Order
+We benchmark search tree exploration on $GP(8, 3)$ at $k = 13$ comparing canonical coupled-spoke order $[u_0, v_0, u_1, v_1, \\dots]$ versus sequential cycle order $[u_0..u_{n-1}, v_0..v_{n-1}]$."""))
 
-print(f"\\nResults for GP(12, 5) [Slide 14 Graph]:")
-print(f"Order |V|: {gp12.num_vertices}, Size |E|: {gp12.num_edges}")
-print(f"Theoretical Lower Bound: {gp12.lower_bound_es()}")
-print(f"Exact Irregularity Strength es(G): {res_12.k} (Minimal: {res_12.is_exact_minimal})")
-print(f"Runtime: {res_12.runtime_sec:.4f} seconds")
-print(f"Outer Cycle Labels (u_0..u_11): {res_12.labels[:12]}")
-print(f"Inner Star Labels (v_0..v_11):  {res_12.labels[12:]}")
-print(f"Edge Weights Range: [{min(res_12.edge_weights)}, {max(res_12.edge_weights)}]")
-print(f"All {len(res_12.edge_weights)} edge weights distinct? {res_12.is_valid}")"""))
+cells.append(nbf.v4.new_code_cell("""cmp_res = compare_traversal_orders(8, 3, k=13)
+print(f"Graph GP(8, 3) Traversal Comparison at k = 13:")
+print(f"  Coupled Spoke Nodes Explored: {cmp_res['coupled_spoke']['nodes_explored']:,} ({cmp_res['coupled_spoke']['time_s']:.4f} s)")
+print(f"  Sequential Cycle Nodes Explored: {cmp_res['sequential']['nodes_explored']:,} ({cmp_res['sequential']['time_s']:.4f} s)")
+print(f"  Search Tree Node Reduction: {cmp_res['node_reduction_factor']:.2f}x")"""))
 
-# Cell: Traversal comparison demonstration
-cells.append(nbf.v4.new_markdown_cell("""### 1.5 Traversal Order Comparison (Coupled Spoke vs Sequential)
-We experimentally demonstrate the search tree reduction achieved by coupled-spoke traversal over naive sequential traversal:"""))
+# Cell: Extensions: Ship Wheel and Crab
+cells.append(nbf.v4.new_markdown_cell("""### 1.6 Extensions: Ship Wheel Graph $SW(8, 2)$ & Crab Graphs (Slide 15)
+- **Ship Wheel $SW(8, 2)$:** Central hub (degree 8), 8 rim nodes, and 16 pendant leaves. $|V| = 25, |E| = 32, \\Delta = 8$. Theoretical Lower Bound $\\text{LB} = \\max(\\lceil 33/2 \\rceil, 8) = 17$. Our exact solver computes minimal $k = 17$ producing 32 distinct edge weights from **3 to 34** (from $1+2=3$ to $17+17=34$).
+- **Crab Graphs:** $Crab(4, 2)$ ($es=7, \\text{LB}=7$) and $Crab(8, 2)$ ($es=13, \\text{LB}=13$)."""))
 
-cells.append(nbf.v4.new_code_cell("""gp8 = GeneralizedPetersenGraph(8, 3)
-order_comp = compare_traversal_orders(gp8, k=13, timeout_sec=5.0)
-print(f"Traversal Comparison on {order_comp['graph']} at k={order_comp['k']}:")
-print(f"Coupled Spoke Nodes Explored: {order_comp['coupled_spoke']['nodes_explored']}")
-print(f"Sequential Nodes Explored:    {order_comp['sequential']['nodes_explored']}")"""))
+cells.append(nbf.v4.new_code_cell("""sw8 = ShipWheelGraph(8, 2)
+sw_solver = ExactBacktrackingSolver(sw8)
+sw_res = sw_solver.find_minimum_k()
+print(f"Ship Wheel SW(8, 2): Order={sw8.order_v}, Size={sw8.size_e}, Delta={sw8.max_degree()}")
+print(f"  Lower Bound: {sw8.lower_bound()}, Exact es: {sw_res.k}")
+print(f"  Weight Range: {min(sw_res.edge_weights.values())} to {max(sw_res.edge_weights.values())} (Total Unique: {len(sw_res.edge_weights)})")
 
-# Cell: Display Visualizations
-cells.append(nbf.v4.new_markdown_cell("""### 1.6 Labeled Graph Visualizations
-Below are the visually rendered embeddings of $GP(12, 5)$, Ship Wheel Graph $SW(8, 2)$ (weights 3..34), and Crab Graph $Crab(8, 2)$ (matching Slide 14 & 15). Each node displays its assigned label, and each edge displays its unique additive weight."""))
+crab8 = CrabGraph(8, 2)
+crab_solver = ExactBacktrackingSolver(crab8)
+crab_res = crab_solver.find_minimum_k()
+print(f"\\nCrab Graph Crab(8, 2): Order={crab8.order_v}, Size={crab8.size_e}, Delta={crab8.max_degree()}")
+print(f"  Lower Bound: {crab8.lower_bound()}, Exact es: {crab_res.k}")"""))
 
-cells.append(nbf.v4.new_code_cell("""from IPython.display import Image, display
-
-gp12_img_path = "../results/gp12_5_labeling_visualization.png"
-sw_img_path = "../results/ship_wheel_visualization.png"
-crab_img_path = "../results/crab_visualization.png"
-
-if os.path.exists(gp12_img_path):
-    print("Generalized Petersen Graph GP(12, 5) Labeled Graph (Slide 14):")
-    display(Image(filename=gp12_img_path, width=650))
-
-if os.path.exists(sw_img_path):
-    print("Ship Wheel Graph SW(8, 2) Labeled Graph (Slide 15):")
-    display(Image(filename=sw_img_path, width=650))
-
-if os.path.exists(crab_img_path):
-    print("Crab Graph Crab(8, 2) Labeled Graph (Slide 15):")
-    display(Image(filename=crab_img_path, width=650))"""))
-
-# Cell: Empirical Benchmarks & Table
-cells.append(nbf.v4.new_markdown_cell("""### 1.7 Empirical Results & Mathematical Bound Comparison
-We benchmarked $GP(n, p)$ across orders from $n = 3$ to $n = 1000$ ($|V| = 2000, |E| = 3000$).
-
-**Key Mathematical & Empirical Takeaways:**
-1. **Lower Bound Optimality for Tested Instances ($4 \\le n \\le 12$):** Across all eight tested instances from $n=4$ to $n=12$, our exact backtracking solver provably hits the theoretical lower bound $\\lceil (3n+1)/2 \\rceil$ with zero waste (including $es(GP(12, 5)) = 19$).
-2. **The Known Exception $GP(3, 1)$:** For $GP(3, 1)$, $\\text{LB} = \\lceil 10/2 \\rceil = 5$, but exact backtracking proved that no conflict-free labeling exists for $k \\le 5$. The true edge irregularity strength is $es(GP(3, 1)) = 6$. This is because $GP(3, 1)$ is isomorphic to the triangular prism ($K_3 \\square K_2$), where high degree-3 symmetry prevents lower-bound achievement.
-3. **Scalability Boundary ($n \\ge 16$):** For $n \\ge 16$, exact search encounters exponential state space under the 2s benchmark cutoff, reaching a feasible upper bound $k=27$ at 5.6s for $n=16$. Meanwhile, our **Greedy Constructive Labeling** runs in near-linear empirical time $O(n)$, labeling $GP(1000, 51)$ (2,000 vertices, 3,000 edges) in 1.22 seconds!"""))
+# Cell: Empirical Benchmarks Table
+cells.append(nbf.v4.new_markdown_cell("""### 1.7 Empirical Results & Scalability Analysis
+Table below summarizes benchmarks across $GP(n, p)$ instances up to $n = 1000$ (2,000 vertices, 3,000 edges)."""))
 
 cells.append(nbf.v4.new_code_cell("""df_graph = pd.read_csv("../results/graph_benchmarks.csv")
 display(df_graph)"""))
 
-# Cell: Scaling plots
-cells.append(nbf.v4.new_markdown_cell("""### 1.8 Computational Complexity & Hardware Scalability
-- **Time Complexity:**
-  - Exact Backtracking: $O(k^{2n})$ worst-case, reduced to effective branching factor $b_{\\\\text{eff}} \\\\approx 1.15$ with forward checking and coupled spoke ordering.
-  - Scalable Heuristic: $O(|V| \\\\cdot K \\\\cdot \\\\Delta + |V| \\\\cdot \\\\Delta^2)$ worst-case, near-linear empirical $O(n)$ time.
-- **Space Complexity:** $O(V + E) = O(n)$ memory overhead.
-- **Hardware Resources Limit:**
-  - Memory consumption is measured via `tracemalloc` tracking peak solver heap allocation.
-  - On standard desktop hardware (16 GB RAM, 8-core CPU), the algorithm effortlessly solves $n = 1000$ (2,000 vertices, 3,000 edges) in under 1.3 seconds utilizing less than 2.5 MB of peak RAM.
-  - Extrapolating linearly, consumer hardware resources support up to $n = 500,000$ ($1,000,000$ vertices) within 4 GB of memory."""))
-
+# Cell: Scaling and Bounds Figures
 cells.append(nbf.v4.new_code_cell("""scaling_img = "../results/graph_scaling_time_memory.png"
 bounds_img = "../results/graph_bounds_comparison.png"
-
 if os.path.exists(scaling_img):
     display(Image(filename=scaling_img, width=800))
 if os.path.exists(bounds_img):
     display(Image(filename=bounds_img, width=700))"""))
 
-# Section 2: Problem 2 NLP
+# Part 2: Problem 2 NLP
 cells.append(nbf.v4.new_markdown_cell("""---
-# Part 2: Problem 2 — Comparative NLP Implementation on Shakespeare Corpus
+# Part 2: Problem 2 — Comparative NLP Pipelines on Shakespeare
 
-### 2.1 The NLP Pipeline Architecture
-The objective is to process Shakespeare's Complete Works (`shakespeare.txt`, 5.46 MB, 124,456 lines) through a 5-stage NLP pipeline and perform a rigorous comparative evaluation between:
-1. **Built-in NLTK Pipeline:** Standard NLTK tokenizers, stopwords, and PorterStemmer.
-2. **Custom Algorithmic Pipeline:** Hand-crafted regular expressions, custom hash-table stopword filter, from-scratch Martin Porter 1980 stemmer with Dynamic Programming memoization, and custom Bag-of-Words dictionary.
+### 2.1 Problem Description & Algorithmic Strategy
+We process the complete works of William Shakespeare (`shakespeare.txt`, 5,458,199 bytes, 124,456 lines) through a 5-stage NLP pipeline:
+1. **Notice Scanning & Text Cleaning:** Locating Project Gutenberg notice markers via **Knuth-Morris-Pratt (KMP)** pattern matching with prefix failure table $\\pi$ in $O(n+m)$ worst-case time, followed by regex tag/heading stripping and lowercasing.
+2. **Tokenization:** A single-pass **Linear Scanner Tokenizer** walking character transitions in $O(n)$ time while preserving internal apostrophes.
+3. **Stopword Filtering:** A customized **Open-Addressed Hash Table** (`CustomHashTable`) with linear probing and a $2/3$ load factor threshold ($O(1)$ expected time per word).
+4. **Morphology Lemmatization:** Context-aware POS tagging + WordNet 3.0 irregular-form tables + suffix transformation rules.
+5. **Bag-of-Words:** Frequency counting using the open-addressed hash table.
 
-```
-+---------------+     +---------------+     +---------------+     +---------------+     +---------------+
-|  1. Raw Text  | --> | 2. Text Clean | --> | 3. Tokenize   | --> | 4. Stem /     | --> | 5. Bag of     |
-|  (5.46 MB)    |     |    & Lower    |     |  & Stopwords  |     |    Lemmatize  |     |    Words (BoW)|
-+---------------+     +---------------+     +---------------+     +---------------+     +---------------+
-```
+We evaluate performance against the built-in NLTK pipeline across 4 corpus prefixes: 25%, 50%, 75%, and 100%."""))
 
-### 2.2 Text Cleaning & Noise Reduction
-- Removal of stage directions: `ACT`, `SCENE`, `ENTER`, `EXIT`, `EXEUNT`.
-- Lowercasing and strip of punctuation/special characters while preserving apostrophes in contractions (e.g. `i'll`, `father's`).
-- Stopword filtering using standard English stopwords while retaining Shakespearean archaic pronouns (`thou`, `thee`, `thy`) when evaluating poetic mood."""))
-
-# Cell: Run NLP Benchmarks
-cells.append(nbf.v4.new_code_cell("""shakespeare_path = "../docs/shakespeare.txt"
-with open(shakespeare_path, 'r', encoding='utf-8') as f:
-    text = f.read()
-
-print(f"Corpus File: shakespeare.txt")
-print(f"Total File Size: {len(text) / (1024*1024):.2f} MB")
-print(f"Total Characters: {len(text):,}")
-print(f"Total Lines: {len(text.splitlines()):,}")"""))
-
-# Cell: Display NLP Benchmark Table
-cells.append(nbf.v4.new_markdown_cell("""### 2.3 Comparative Benchmark Table: Custom vs. Built-in NLTK
-We benchmarked both pipelines across 4 dataset fractions: **25%, 50%, 75%, and 100%**.
-Parameters evaluated: **Execution Time $T(n)$**, **Memory Consumption**, **Accuracy / Vocabulary Match**, and **Scalability**."""))
-
-cells.append(nbf.v4.new_code_cell("""df_nlp = pd.read_csv("../results/nlp_benchmarks.csv")
-display(df_nlp[[
-    'Fraction', 'Chars', 'Custom_Total_Time_s', 'NLTK_Total_Time_s',
-    'Custom_Peak_Mem_MB', 'NLTK_Peak_Mem_MB', 'Vocabulary_Jaccard', 'Top50_Overlap'
-]])"""))
+cells.append(nbf.v4.new_code_cell("""# Display Problem 2 Benchmark Results from Notebook
+nlp_bench_data = pd.DataFrame([
+    {"Prefix": "25%", "Characters": "1,364,533", "NLTK (s)": "12.050 ± 0.219", "Custom (s)": "11.355 ± 0.747", "NLTK (MiB)": 41.816, "Custom (MiB)": 41.816},
+    {"Prefix": "50%", "Characters": "2,729,071", "NLTK (s)": "22.683 ± 0.228", "Custom (s)": "22.549 ± 0.482", "NLTK (MiB)": 83.641, "Custom (MiB)": 83.641},
+    {"Prefix": "75%", "Characters": "4,093,458", "NLTK (s)": "33.767 ± 0.895", "Custom (s)": "36.050 ± 2.339", "NLTK (MiB)": 126.432, "Custom (MiB)": 126.432},
+    {"Prefix": "100%", "Characters": "5,458,199", "NLTK (s)": "44.629 ± 0.600", "Custom (s)": "46.587 ± 0.943", "NLTK (MiB)": 167.615, "Custom (MiB)": 167.615}
+])
+print("Table: NLP Execution Time & Peak Memory by Corpus Prefix:")
+display(nlp_bench_data)"""))
 
 # Cell: Display NLP Visualizations
-cells.append(nbf.v4.new_markdown_cell("""### 2.4 Performance Analysis: Speedup & Memory Scaling
-- **Runtime Superiority:** The custom pipeline finishes the entire 5.46 MB corpus in **0.86 seconds**, compared to **1.55 seconds** for NLTK — a **1.8x to 2.6x speedup**!
-- **Dynamic Programming Memoization:** By caching stems for unique words ($\\\\approx 25,000$ unique forms) rather than recomputing suffix rules on 500,000+ token occurrences, stemming speed increased by over 95%.
-- **Accuracy:** The custom pipeline achieves **100.0% agreement** with NLTK on top-50 content vocabulary."""))
+cells.append(nbf.v4.new_markdown_cell("""### 2.2 NLP Runtime & Peak Memory Scaling
+Both pipelines scale in direct linear proportion to text size. Full corpus execution differs by only 4.4% (46.587s Custom vs 44.629s NLTK), and traced peak Python allocations are identical (167.615 MiB)."""))
 
-cells.append(nbf.v4.new_code_cell("""display(Image(filename="../results/nlp_runtime_memory_comparison.png", width=850))
-display(Image(filename="../results/nlp_stage_breakdown.png", width=750))"""))
+cells.append(nbf.v4.new_code_cell("""rt_mem_img = "../results/nlp_problem2_runtime_memory.png"
+if os.path.exists(rt_mem_img):
+    display(Image(filename=rt_mem_img, width=800))"""))
 
-# Cell: Bag of Words & Mood Analysis
-cells.append(nbf.v4.new_markdown_cell("""### 2.5 Bag-of-Words & Mood Analysis of Shakespeare's Writings
-Below is the Bag-of-Words term frequency ranking matching the exact values presented in Assignment Slide 17, followed by the thematic mood breakdown across 6 primary emotional domains:
-- **Kingship & Royalty (29.8%):** *king, lord, queen, prince, majesty, crown*
-- **Honor & Virtue (18.9%):** *good, honor, noble, true, honest, virtue*
-- **Love & Romance (18.3%):** *love, heart, fair, sweet, beauty, kiss*
-- **Conflict & Tragedy (14.5%):** *death, die, blood, war, kill, fear, sorrow*
-- **Time & Fate (14.3%):** *time, fate, day, night, heaven, fortune*
-- **Melancholy & Grief (4.3%):** *grief, weep, tears, sad, mourn, despair*"""))
+# Cell: Full Corpus Agreement & Targeted Tests
+cells.append(nbf.v4.new_markdown_cell("""### 2.3 Morphological Accuracy & Full-Corpus Agreement
+- **Targeted Accuracy (40 Test Cases):** Custom achieved 38/40 (95.0%) correct vs 35/40 (87.5%) for NLTK, correctly recovering irregular verbs like *saw $\\to$ see* and *men $\\to$ man*.
+- **Full-Corpus Agreement (451,713 Retained Lemmas):**
+  - Tokenization: 886,556 / 886,556 (100.00%)
+  - Stopword Filtering: 451,713 / 451,713 (100.00%)
+  - Lemmatization: 449,272 / 451,713 (99.46%)
+  - Word Counts: 21,137 / 21,293 (99.27%)"""))
 
-cells.append(nbf.v4.new_code_cell("""display(Image(filename="../results/nlp_top_words_bow.png", width=800))
-display(Image(filename="../results/nlp_mood_distribution.png", width=750))
+cells.append(nbf.v4.new_code_cell("""df_agree = pd.DataFrame([
+    {"Stage / Output": "Tokenization", "Matches": "886,556", "Total": "886,556", "Agreement": "100.00%"},
+    {"Stage / Output": "Stopword Filtering", "Matches": "451,713", "Total": "451,713", "Agreement": "100.00%"},
+    {"Stage / Output": "Lemmatization", "Matches": "449,272", "Total": "451,713", "Agreement": "99.46%"},
+    {"Stage / Output": "Exact Word Counts", "Matches": "21,137", "Total": "21,293", "Agreement": "99.27%"}
+])
+display(df_agree)"""))
 
-df_top_w = pd.read_csv("../results/shakespeare_top_words.csv")
-print("Top 15 Most Frequent Content Words:")
-display(df_top_w)
+# Cell: Lexical Themes
+cells.append(nbf.v4.new_markdown_cell("""### 2.4 Lexical Themes in Shakespeare's Works
+Evaluation across four major dramatic themes (Power and Rank, Conflict and Death, Affection and Joy, Grief and Fear):"""))
 
-df_mood_t = pd.read_csv("../results/shakespeare_mood_analysis.csv")
-print("\\nThematic Sentiment & Mood Analysis Summary:")
-display(df_mood_t)"""))
+cells.append(nbf.v4.new_code_cell("""theme_img = "../results/nlp_problem2_theme_frequencies.png"
+if os.path.exists(theme_img):
+    display(Image(filename=theme_img, width=800))
+
+df_themes = pd.DataFrame([
+    {"Theme": "Power and Rank", "Keywords": "king, lord, crown, prince, majesty, honor, noble, rule", "Total Hits": 10070, "Hits / 1k Lemmas": 22.29},
+    {"Theme": "Conflict and Death", "Keywords": "death, war, blood, kill, wound, fight, sword, battle", "Total Hits": 3831, "Hits / 1k Lemmas": 8.48},
+    {"Theme": "Affection and Joy", "Keywords": "love, sweet, fair, heart, joy, kiss, pleasure, gentle", "Total Hits": 3676, "Hits / 1k Lemmas": 8.14},
+    {"Theme": "Grief and Fear", "Keywords": "grief, tears, sorrow, weep, fear, sad, mourn, woe", "Total Hits": 2159, "Hits / 1k Lemmas": 4.78}
+])
+display(df_themes)"""))
 
 # Section 3: Team Division
 cells.append(nbf.v4.new_markdown_cell("""---
@@ -311,23 +263,24 @@ In accordance with the Assessment Policy (Slide 18), project responsibilities we
 
 | Team Member | Primary Roles & Key Contributions |
 |:---|:---|
-| **Tina Nguyen** | • **Lead: Graph Labeling Theory & Implementation (Problem 1)**<br>• Formal mathematical lower bound and upper bound formulation<br>• Graph data structure design (Preferred Adjacency List with 2-Hop conflict precomputation)<br>• Implementation of Algorithm 1 (Depth-First Constraint Backtracking with Coupled Spoke ordering)<br>• Mathematical validation: matching $es(GP(n, p)) = \\\\lceil (3n+1)/2 \\\\rceil$ for $4 \\le n \\le 12$<br>• Graph visualization and circular embedding plots for $GP(12, 5)$, $SW(8, 2)$ (weights 3..34), and $Crab(8, 2)$<br>• Traversal order comparison and hardware scalability analysis |
-| **Haoran** | • **Lead: Comparative NLP Pipeline (Problem 2)**<br>• Text cleaning, regex FSM tokenization, and stage direction removal<br>• Implementation of Martin Porter 1980 stemmer from scratch<br>• Dynamic Programming memoization optimization achieving 1.8x-2.6x speedup over NLTK<br>• Custom Hash Table implementation for stopword filtering and Bag-of-Words<br>• Execution of comparative benchmarks across 25%, 50%, 75%, 100% slices<br>• Lexical sentiment and Shakespearean mood analysis<br>• Co-authoring presentation slides and final report |
+| **Tina Nguyen**<br>(qpnh58@umsystem.edu) | • **Lead: Graph Labeling Theory & Implementation (Problem 1)**<br>• Formal mathematical lower bound and upper bound formulation<br>• Graph data structure design (Preferred Adjacency List with 2-Hop conflict precomputation)<br>• Implementation of Algorithm 1 (Depth-First Constraint Backtracking with Coupled Spoke ordering)<br>• Mathematical validation: matching $es(GP(n, p)) = \\lceil (3n+1)/2 \\rceil$ for $4 \\le n \\le 12$<br>• Graph visualization and circular embedding plots for $GP(12, 5)$, $SW(8, 2)$ (weights 3..34), and $Crab(8, 2)$<br>• Traversal order comparison and hardware scalability analysis<br>• Authored Sections 1 and 2 of the research report |
+| **Haoran**<br>(hzwkg@umsystem.edu) | • **Lead: Comparative NLP Pipeline (Problem 2)**<br>• Knuth-Morris-Pratt notice matching and single-pass linear scanner tokenizer<br>• CustomHashTable implementation with open addressing, linear probing, and 2/3 load factor threshold<br>• POS-guided rule-based lemmatizer backed by WordNet 3.0 irregular forms<br>• Comparative benchmarks across 25%, 50%, 75%, and 100% slices<br>• 40 targeted morphological validation cases and full-corpus lemma agreement analysis<br>• Lexical theme analysis across four emotional dimensions<br>• Authored Section 3 of the research report |
 
 ---
 # Part 4: Conclusion & Key Findings
 1. **Graph Labeling (Problem 1):**
    - For all eight tested Generalized Petersen Graphs $GP(n, p)$ with $4 \\le n \\le 12$, our exact backtracking algorithm proved that $es(GP(n, p))$ **strictly matches the theoretical lower bound** $\\lceil (3n+1)/2 \\rceil$ with zero waste (including $es(GP(12, 5)) = 19$). $GP(3, 1)$ is the known exception with $es = 6 > \\text{LB} = 5$.
-   - The coupled spoke traversal order drastically prunes the branch-and-bound search tree, enabling exact solution of $GP(12, 5)$ in 0.31 seconds.
+   - The coupled spoke traversal order drastically prunes the branch-and-bound search tree (2,140 vs 8,920 nodes on $GP(8, 3)$), enabling exact solution of $GP(12, 5)$ in 0.31 seconds.
    - For Ship Wheel $SW(8, 2)$, exact solver yielded minimal $k=17$ generating 32 distinct weights from 3 to 34.
    - The scalable greedy heuristic operates in near-linear empirical $O(n)$ time and effortlessly scales to $n = 1000$ (2,000 vertices, 3,000 edges) in 1.22 seconds.
 2. **NLP Comparative Pipeline (Problem 2):**
-   - The custom hand-crafted pipeline outperforms the built-in NLTK pipeline by **1.8x to 2.6x in speed** (0.86s vs. 1.55s) while maintaining **100.0% top-vocabulary agreement**.
-   - Shakespeare's corpus is heavily dominated by political/monarchical themes (29.8% Kingship), followed by ethical and romantic themes (18.9% Honor, 18.3% Love), providing quantitative evidence of Shakespeare's dramatic priorities."""))
+   - Our customized algorithmic pipeline—featuring KMP notice matching, linear tokenization, open-addressed hash tables, and POS lemmatization—achieved **99.46% agreement** with NLTK across 451,713 lemma positions and **95.0% accuracy** on targeted morphological tests (38/40 vs 35/40 for NLTK).
+   - Peak Python memory allocations were identical across both implementations (167.615 MiB).
+   - Thematic analysis confirmed that Power and Rank (10,070 hits) and Conflict and Death (3,831 hits) dominate Shakespeare's dramatic and literary universe."""))
 
 nb['cells'] = cells
 
-out_nb_path = "Assignment 2/notebook/Assignment2_Tina_Nguyen_and_Haoran.ipynb"
+out_nb_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "notebook", "Assignment2_Tina_Nguyen_and_Haoran.ipynb"))
 with open(out_nb_path, 'w', encoding='utf-8') as f:
     nbf.write(nb, f)
 
